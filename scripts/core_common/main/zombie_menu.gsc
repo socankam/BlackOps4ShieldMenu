@@ -13,7 +13,8 @@ ZombieMenu()
 
     self createMenu("FunZombieOptions", "Zombie Options");
     self addToggleOption("FunZombieOptions", "Plasma Loop", &PlasmaLoop, false);
-    self addOption("FunZombieOptions", "Spawn Luna Wolf (Protector)", &SpawnLunaWolf, []);
+    self addOption("FunZombieOptions", "Spawn Luna Wolf", &SpawnLunaWolf, []);
+    self addToggleOption("FunZombieOptions", "Spawn Kam's Wolf", &ToggleRideWolf, false);
     self addToggleOption("FunZombieOptions", "Zombies Ignore You", &NoTarget, false);
     self addOption("FunZombieOptions", "Zombies Have Duck Floaties", &ZombieDuckFloaties, []);
     self addOption("FunZombieOptions", "Kill All Zombies", &KillAllZombies, []);
@@ -26,7 +27,10 @@ ZombieMenu()
     self addToggleOption("FunZombieOptions", "Freeze Zombies", &FreezeZombies, false);
     self addToggleOption("FunZombieOptions", "Zombies On Fire", &ZombieDogFX, false);
     self addToggleOption("FunZombieOptions", "Disable Zombie Spawning", &DisableZombieSpawning, false);
+    self addToggleOption("FunZombieOptions", "Electrify Zombies", &toggleSparkZombies, false);
+    //self addToggleOption("FunZombieOptions", "Exploding Zombie Guts", &toggleAcidZombies, false);
     self addOption("FunZombieOptions", "Reset Round", &ResetRound, []);
+    self addOption("FunZombieOptions", "Give Bubblegum", &Bubblegum, []);
 
     self createMenu("ZombieEyeColors", "Zombie Eye Colors");
     self addToggleOption("ZombieEyeColors", "Flashing Eye Colors", &FlashingEyeColors, false);
@@ -62,6 +66,205 @@ ZombieMenu()
     self addOption("ZombieSpawner", "Spawn Hell Hound", &SpawnZombie, "hellhound");
     self addOption("ZombieSpawner", "Spawn Brutus", &SpawnZombie, "brutus");
     self addOption("ZombieSpawner", "Spawn Avogadro", &SpawnZombie, "avogadro");
+}
+
+ToggleRideWolf()
+{
+    self.RideWolf = isDefined(self.RideWolf) ? undefined : true;
+
+    self notify("stop_wolf_ride");
+
+    if ( isDefined(self.RideWolf) )
+    {
+        if ( !isDefined(self.kam_wolf) )
+        {
+            self.kam_wolf = spawnactor(#"hash_3f174b9bcc408705", self.origin, self.angles, "wolf_protector", 1);
+            wait 0.05;
+        }
+
+        if ( !isDefined(self.kam_wolf) )
+        {
+            self.RideWolf = undefined;
+            return;
+        }
+
+        self attach(#"p8_zm_red_floatie_duck", "j_spinelower");
+
+        self setclientthirdperson(1);
+
+        self thread WolfRideSeatLinkLoop();
+    }
+    else
+    {
+        self unlink();
+        self setclientthirdperson(0);
+
+        if ( isDefined(self.kam_wolf_seat) )
+        {
+            self.kam_wolf_seat delete();
+            self.kam_wolf_seat = undefined;
+        }
+    }
+}
+
+WolfRideSeatLinkLoop()
+{
+    self endon("disconnect");
+    self endon("death");
+    self endon("stop_wolf_ride");
+
+    wolf = self.kam_wolf;
+    if ( !isDefined(wolf) )
+    {
+        self.RideWolf = undefined;
+        return;
+    }
+
+    if ( isDefined(self.kam_wolf_seat) )
+    {
+        self.kam_wolf_seat delete();
+        self.kam_wolf_seat = undefined;
+    }
+
+    seat = spawn("script_model", wolf.origin);
+    seat setModel("tag_origin");
+    self.kam_wolf_seat = seat;
+
+    self linkto(seat);
+
+    forwardDist = 10;
+    rightDist   = 0;
+    upDist      = 35;
+
+    lerp = 0.35;
+    seatPos = seat.origin;
+
+    while ( isDefined(self.RideWolf) && isDefined(wolf) && isDefined(seat) )
+    {
+        yawAng = (0, wolf.angles[1], 0);
+
+        f = anglestoforward(yawAng);
+        r = anglestoright(yawAng);
+
+        target = wolf.origin
+               + vectorscale(f, forwardDist)
+               + vectorscale(r, rightDist)
+               + (0, 0, upDist);
+
+        seatPos = ( seatPos[0] + ((target[0] - seatPos[0]) * lerp),
+                    seatPos[1] + ((target[1] - seatPos[1]) * lerp),
+                    seatPos[2] + ((target[2] - seatPos[2]) * lerp) );
+
+        seat.origin = seatPos;
+        seat.angles = yawAng;
+
+        waitframe(1);
+    }
+
+    self unlink();
+    self setclientthirdperson(0);
+
+    if ( isDefined(seat) )
+        seat delete();
+
+    self.kam_wolf_seat = undefined;
+    self.RideWolf = undefined;
+}
+
+toggleSparkZombies()
+{
+    self.SparkZombies = isDefined(self.SparkZombies) ? undefined : true;
+
+    if (isDefined(self.SparkZombies))
+    {
+        while(isDefined(self.SparkZombies)){
+            zombies = GetAITeamArray(level.zombie_team);
+            for (a = 0; a < zombies.size; a++)
+            {
+                zombies[a] clientfield::set("sparky_zombie_trail_fx", 1);
+                wait 3.5;
+                zombies[a] clientfield::set("sparky_zombie_trail_fx", 0);
+            }
+            wait 0.5;
+            level thread monitorNewZombiesForSpark();
+        }
+    }
+    else
+    {
+        zombies = GetAITeamArray(level.zombie_team);
+        for (a = 0; a < zombies.size; a++)
+        {
+                zombies[a] clientfield::set("sparky_zombie_trail_fx", 0);
+        }
+        level notify("stop_spark_monitor");
+    }
+}
+
+monitorNewZombiesForSpark()
+{
+    level endon("stop_spark_monitor");
+
+    while (isDefined(self.SparkZombies))
+    {
+        zombies = GetAITeamArray(level.zombie_team);
+        for (a = 0; a < zombies.size; a++)
+        {
+                zombies[a] clientfield::set("sparky_zombie_trail_fx", 1);
+        }
+        wait 2;
+    }
+}
+
+toggleAcidZombies()
+{
+    self.AcidZombies = isDefined(self.AcidZombies) ? undefined : true;
+
+    if (isDefined(self.AcidZombies))
+    {
+        while(isDefined(self.AcidZombies)){
+            zombies = GetAITeamArray(level.zombie_team);
+            for (a = 0; a < zombies.size; a++)
+            {
+                zombies[a] clientfield::set("zombie_gut_explosion", 1);
+                wait 2;
+                zombies[a] clientfield::set("zombie_gut_explosion", 0);
+            }
+            wait 0.5;
+            level thread monitorNewZombiesForAcid();
+        }
+    }
+    else
+    {
+        zombies = GetAITeamArray(level.zombie_team);
+        for (a = 0; a < zombies.size; a++)
+        {
+                zombies[a] clientfield::set("zombie_gut_explosion", 0);
+        }
+        level notify("stop_acid_monitor");
+    }
+}
+
+monitorNewZombiesForAcid()
+{
+    level endon("stop_acid_monitor");
+
+    while (isDefined(self.AcidZombies))
+    {
+        zombies = GetAITeamArray(level.zombie_team);
+        for (a = 0; a < zombies.size; a++)
+        {
+                zombies[a] clientfield::set("zombie_gut_explosion", 1);
+        }
+        wait 2;
+    }
+}
+
+Bubblegum()
+{
+    self endon("disconnect");
+    self GivePlayerWeapon(#"zombie_bgb_grab");
+    wait 3;
+    self GivePlayerWeapon("ray_gun");
 }
 
 GiveWeaponAAT(aat)
@@ -290,6 +493,14 @@ ChangeRound(Round){
 SpawnLunaWolf()
 {
     spawnactor(#"hash_3f174b9bcc408705", self.origin, self.angles, "wolf_protector", 1);
+}
+
+SpawnLunaWolfWithDuck()
+{
+    wolf = spawnactor(#"hash_3f174b9bcc408705", self.origin, self.angles, "wolf_protector", 1);
+
+    if ( isDefined(wolf) )
+        wolf attach(#"p8_zm_red_floatie_duck", "tag_back");
 }
 
 ZombieDuckFloaties()

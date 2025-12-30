@@ -13,6 +13,7 @@ onPlayerConnect() {
     level.MainMenuRegistry["Weapon Options"] = &WeaponsMenu;
     level.MainMenuRegistry["Vehicle Menu"] = &VehicleMenu;
     level.MainMenuRegistry["Zombies Menu"] = &ZombieMenu;
+    level.MainMenuRegistry["Vision Menu"] = &VisionMenu;
     level.MainMenuRegistry["Teleport Menu"] = &TeleportMenu;
     level.MainMenuRegistry["Character Menu"] = &CharacterMenu;
     level.MainMenuRegistry["Forge Menu"] = &ForgeMenu;
@@ -446,6 +447,7 @@ setupMenu() {
         self addOption("Main", "Character Menu", &OpenSubMenu, "CharacterMenu");
         self addOption("Main", "Vehicle Menu", &OpenSubMenu, "VehicleMenu");
         if(Zombies() || Blackout()) self addOption("Main", "Zombies Menu", &OpenSubMenu, "ZombieMenu");
+        self addOption("Main", "Vision Menu", &OpenSubMenu, "VisionMenu");
         self addOption("Main", "Teleport Menu", &OpenSubMenu, "TeleportMenu");
         self addOption("Main", "Forge Menu", &OpenSubMenu, "ForgeMenu");
         if(Blackout()){

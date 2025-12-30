@@ -19,12 +19,12 @@
 #include scripts\core_common\exploder_shared;
 #include scripts\core_common\vehicle_shared.gsc;
 #include scripts\core_common\rank_shared.gsc;
-#include scripts\core_common\visionset_mgr_shared.gsc;
 
 #using scripts\core_common\aat_shared;
 #using scripts\core_common\bots\bot_action;
 #using scripts\core_common\animation_shared;
 #using scripts\core_common\player\player_stats;
+#using scripts\core_common\visionset_mgr_shared.gsc;
 #using scripts\core_common\ai\systems\ai_interface.gsc;
 
 #namespace blackops4menu;

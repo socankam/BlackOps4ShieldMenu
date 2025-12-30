@@ -27,7 +27,6 @@ PersonalMenu(){
     self addToggleOption("FunOptions", "Meteor Shower", &RainingRockets, false);
     self addOption("FunOptions", "Don't Show On Sensor Darts", &SetToPlayer, "specialty_nottargetedbysensors");
     self addOption("FunOptions", "Clone Yourself", &Clone, []);
-    self addToggleOption("FunOptions", "Fire Vision", &EnableFireVision, false);
     self addToggleOption("FunOptions", "Invisible Weapon", &HideWeapon, false);
     self addToggleOption("FunOptions", "Ice Skating", &IceSkating, false);
     self addOption("FunOptions", "Bare Hands", &GivePlayerWeapon, "bare_hands");
