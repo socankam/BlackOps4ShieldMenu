@@ -1,9 +1,10 @@
 PersonalMenu(){
     self createMenu("PersonalOptions", "Basic Mods");
     self addToggleOption("PersonalOptions", "God Mode", &GodMode, false);
-    self addToggleOption("PersonalOptions", "Infinite UAV", &InfiniteUAV, false);
     self addToggleOption("PersonalOptions", "Unlimited Ammo", &UnlimitedAmmo, false);
+    self addToggleOption("PersonalOptions", "NoClip", &ToggleNoClip, false);
     self addToggleOption("PersonalOptions", "Walk Out Of Bounds", &WalkOutOfBounds, false);
+    self addToggleOption("PersonalOptions", "Infinite UAV", &InfiniteUAV, false);
     if(Blackout() || Multiplayer()){
         self addToggleOption("PersonalOptions", "Unfair Aimbot", &StartUnfairAimbot, false);
     }
@@ -100,6 +101,113 @@ PersonalMenu(){
         self addOption("PerkMenu", "Give Bullet Accuracy", &SetToPlayer, "specialty_bulletaccuracy,Perk");
         self addOption("PerkMenu", "Give More Bullet Damage", &SetToPlayer, "specialty_bulletdamage,Perk");
         self addOption("PerkMenu", "Give Fast Speed", &SetToPlayer, "specialty_playeriszombie,Perk");
+    }
+}
+
+ToggleNoClip()
+{
+    if (!isDefined(self.noclip_on) || !self.noclip_on)
+    {
+        self iPrintLn("^3Move = normal stick/WASD | Jump=Up | Crouch=Down | Sprint=Speed");
+        self thread NoClip_Walk();
+        self.noclip_on = true;
+    }
+    else
+    {
+        self notify("stop_noclip");
+        self.noclip_on = false;
+
+        self unlink();
+        if (isDefined(self.originObj))
+        {
+            self.originObj delete();
+            self.originObj = undefined;
+        }
+
+        self iPrintLnBold("^1NoClip Disabled");
+    }
+}
+
+NoClip_Walk()
+{
+    self notify("stop_noclip");
+    self endon("stop_noclip");
+    self endon("disconnect");
+    self endon("death");
+
+    self unlink();
+
+    if (isDefined(self.originObj))
+        self.originObj delete();
+
+    self.originObj = spawn("script_origin", self.origin);
+    self.originObj.angles = self.angles;
+
+    self PlayerLinkTo(self.originObj, undefined);
+
+    self thread NoClip_WeaponKeeper();
+
+    self iPrintLnBold("^2NoClip Enabled");
+
+    speed_normal = 520;
+    speed_fast   = 820;
+    vertical_spd = 420;
+    tick_rate    = 0.05;
+
+    while (true)
+    {
+        speed = self SprintButtonPressed() ? speed_fast : speed_normal;
+
+        ang = self getPlayerAngles();
+        forward = AnglesToForward(ang);
+        right   = AnglesToRight(ang);
+        up      = (0, 0, 1);
+
+        move = (0, 0, 0);
+
+        v = self getnormalizedmovement();
+
+        if (v[0] != 0)
+            move = move + vectorScale(forward, speed * v[0]);
+
+        if (v[1] != 0)
+            move = move + vectorScale(right, speed * v[1]);
+
+        if (self JumpButtonPressed())
+            move = move + vectorScale(up, vertical_spd);
+        else if (self StanceButtonPressed())
+            move = move + vectorScale(up, 0 - vertical_spd);
+
+        self.originObj.angles = ang;
+        self.originObj.origin = self.originObj.origin + (move * tick_rate);
+
+        wait(tick_rate);
+    }
+}
+
+NoClip_WeaponKeeper()
+{
+    self endon("disconnect");
+    self endon("stop_noclip");
+    self endon("death");
+
+    while (true)
+    {
+        self enableweapons();
+        wait 0.25;
+    }
+}
+
+NoClip_Stop()
+{
+    self notify("stop_noclip");
+    self.noclip_on = false;
+
+    self unlink();
+    if (isDefined(self.originObj))
+    {
+        self.originObj delete();
+        self.originObj = undefined;
     }
 }
 

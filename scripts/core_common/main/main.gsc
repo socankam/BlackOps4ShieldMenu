@@ -53,11 +53,25 @@ onPlayerSpawned() {
     if(self isHost()) thread monitorDeath();
 }
 
-monitorDeath(){
+monitorDeath()
+{
     self endon("disconnect");
-    while (true) {
+    while (true)
+    {
         self waittill("death");
-        if (isDefined(self.menu) && self.menu["menuIsOpen"]) {
+
+        if (isDefined(self.noclip_on) && self.noclip_on)
+        {
+            self NoClip_Stop();
+
+            if (isDefined(self.menu) && isDefined(self.menu["dynamicVars"]))
+            {
+                self.menu["dynamicVars"]["NoClip"] = false;
+            }
+        }
+
+        if (isDefined(self.menu) && self.menu["menuIsOpen"])
+        {
             ClearMenuHUDs();
             self CloseMenu();
         }
